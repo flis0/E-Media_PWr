@@ -2,7 +2,7 @@
 
 Collaborators:
 - Szymon Flis `@fils0`
-- Magdalena Pęcak `@github-login`
+- Magdalena Pęcak `@magpec22`
 
 ---
 
