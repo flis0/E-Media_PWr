@@ -67,9 +67,9 @@ class App(tk.Tk):
 
         # Left: image preview + chunks tree
         left = tk.Frame(paned)
-        paned.add(left, minsize=280)
+        paned.add(left, minsize=280, sticky="nsew")
 
-        self.img_label = tk.Label(left, text="(no image)", bg="white")
+        self.img_label = tk.Label(left, text="(no image)", bg="white", height=12)
         self.img_label.pack(fill="both", expand=True, padx=2, pady=4)
 
         tk.Label(left, text="Chunks", font=("", 10, "bold")).pack(anchor="w", padx=2, pady=(4,2))
@@ -89,10 +89,10 @@ class App(tk.Tk):
 
         # Right: tabs
         right = tk.Frame(paned)
-        paned.add(right, minsize=500)
+        paned.add(right, minsize=500, sticky="nsew")
 
         nb = ttk.Notebook(right)
-        nb.pack(fill="both", expand=True)
+        nb.pack(fill="both", expand=True, pady=2)
 
         # Metadata tab
         self.meta_tab = tk.Frame(nb)
@@ -118,7 +118,7 @@ class App(tk.Tk):
         self.anon_text = self._scrolled_text(self.anon_tab)
 
     def _scrolled_text(self, parent) -> scrolledtext.ScrolledText:
-        st = scrolledtext.ScrolledText(parent, font=MONO, wrap="word", state="disabled")
+        st = scrolledtext.ScrolledText(parent, font=MONO, wrap=tk.NONE, state="disabled")
         st.pack(fill="both", expand=True, padx=4, pady=4)
         return st
 
@@ -195,6 +195,19 @@ class App(tk.Tk):
             if len(a["plte"]) > 16:
                 lines.append(f"... and {len(a['plte'])-16} more")
 
+        # Other critical chunks
+        lines.append("")
+        lines.append("OTHER CRITICAL CHUNKS")
+        lines.append("=" * 40)
+        idat_chunks = [c for c in a["chunks_summary"] if c["type"] == "IDAT"]
+        if idat_chunks:
+            total_idat_size = sum(c["length"] for c in idat_chunks)
+            lines.append(f"IDAT (Image Data): {len(idat_chunks)} chunk(s), "
+                        f"total {total_idat_size:,} bytes (compressed)")
+        iend_chunks = [c for c in a["chunks_summary"] if c["type"] == "IEND"]
+        if iend_chunks:
+            lines.append(f"IEND (Image End): 1 chunk (file terminator)")
+
         # Ancillary chunks
         self._add_chunk_section(lines, "gAMA", a["gama"], {"gamma": "Gamma value"})
         self._add_chunk_section(lines, "pHYs", a["phys"], {"dpi_x": "DPI X", "dpi_y": "DPI Y"})
@@ -213,7 +226,7 @@ class App(tk.Tk):
                 for item in arr:
                     if "error" not in item:
                         kw = item.get("keyword", "")
-                        text = item.get("text", "")[:100]
+                        text = item.get("text", "")
                         lines.append(f"Key:   {kw}")
                         lines.append(f"Value: {text}")
                         lines.append("")
@@ -232,6 +245,24 @@ class App(tk.Tk):
                 lines.append(f"Byte order: {exif.get('byte_order','')}")
                 for tag, val in exif.get("tags", {}).items():
                     lines.append(f"{tag}: {val}")
+
+        # Known but undecoded ancillary chunks
+        known_undecoded = {"iCCP", "hIST", "sBIT", "sPLT"}
+        found_known_undecoded = [c for c in a["chunks_summary"] 
+                                 if not c["critical"] and c["type"] in known_undecoded]
+        if found_known_undecoded:
+            lines.append("")
+            lines.append("Known Ancillary Chunks (Not Detailed)")
+            lines.append("=" * 40)
+            chunk_info = {
+                "iCCP": "ICC color profile",
+                "hIST": "Histogram (palette image)",
+                "sBIT": "Significant bits",
+                "sPLT": "Suggested palette",
+            }
+            for chunk in found_known_undecoded:
+                desc = chunk_info.get(chunk["type"], "Unknown type")
+                lines.append(f"{chunk['type']:4s} – {desc:<30s} ({chunk['length']:,} bytes)")
 
         # Unknown chunks
         if a["unknown_ancillary"]:
@@ -408,6 +439,8 @@ class App(tk.Tk):
         widget.configure(state="normal")
         widget.delete("1.0", "end")
         widget.insert("1.0", content)
+        widget.update_idletasks()  # Force geometry update
+        widget.see("1.0")  # Scroll to top
         widget.configure(state="disabled")
 
 
