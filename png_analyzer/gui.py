@@ -1,8 +1,4 @@
 #!/usr/bin/env python3
-"""
-GUI aplikacji PNG Analyzer — tkinter + matplotlib
-"""
-
 import tkinter as tk
 from tkinter import ttk, filedialog, messagebox, scrolledtext
 import threading

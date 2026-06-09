@@ -1,10 +1,4 @@
 #!/usr/bin/env python3
-"""
-PNG File Analyzer — E-media Projekt 1
-Autorzy: (dwuosobowa grupa)
-Analiza formatu PNG: nagłówki, ancillary chunks, FFT, anonimizacja
-"""
-
 import struct
 import zlib
 import os
